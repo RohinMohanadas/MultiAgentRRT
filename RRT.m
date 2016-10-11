@@ -6,7 +6,7 @@ classdef RRT
 %*   DESCRIPTION:                                                                                    *%
 %*   AUTHOR:                                                                                         *%
 %*   DATE CREATION:09/10/2016                                                                        *%
-%*   LAST MODIFIED:09/10/2016                                                                        *%
+%*   LAST MODIFIED:10/10/2016                                                                        *%
 %*                                                                                                   *%
 %*****************************************************************************************************%
     
@@ -81,7 +81,7 @@ classdef RRT
 
                 %check to see if you have reached goal -- get rrt_path
                 if (rrt.initialMap(rrt.goal(1),rrt.goal(2)) == 1)
-                    fprintf('Reached goal in %d iterations\n', i);
+                    %fprintf('Found goal in %d iterations\n', i);
                     %trace back your path:
                     rrt_path = getPath(rrt,tree,parent,i);
                     break; %breaks loop if you have reached the end
@@ -177,6 +177,8 @@ classdef RRT
         
         function rrt_path = getPath(rrt,tree,parent,current_index)
             rrt_path = zeros(current_index,2);
+            %disp(tree);
+            %disp(parent);
             for index = 1:current_index
                 if (index == 1)
                     rrt_path(index,:) = tree(current_index,:);
@@ -186,14 +188,18 @@ classdef RRT
                     child_of = parent(current_index);
                 else
                     if(child_of == 0)
-                        rrt_path = flipud(rrt_path); %flipping the matrix
+                        %rrt_path = flipud(rrt_path); %flipping the matrix
                         break;
                     else
                         rrt_path(index,:) = tree(child_of,:);
                         child_of = parent(child_of);
-                    end
+                        %if (index == 2 && current_index == 2)
+                        %    rrt_path = flipud(rrt_path); %flipping the matrix
+                        %    break;
+                        end
                 end
             end
+                rrt_path = flipud(rrt_path); %flipping the matrix
         end
         
         function rrt_map = getPathMap(rrt,rrt_path)

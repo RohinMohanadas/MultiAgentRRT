@@ -45,17 +45,18 @@ classdef Agent
             Agent.path = Agent.posiblepath;
             c = size(Agent.path); Agent.timeToGoal = c(1);
             Agent.timeSinceStart = 1;
+            %Agent.Bid = - Inf;
         end 
         
-        function Agent = updateMap(Agent,obstacle) %Updates the map of the agent with iformation from another agent
-            Agent.Map(obstacle(1),obstacle(2)) = 5;
+        function Agent = updateMap(Agent,tile,value) %Updates the map of the agent with iformation from another agent
+            Agent.Map(tile(1),tile(2)) = value;
         end 
         
         function Agent = calculatePath(Agent,otherPath) %Calculates the path using RRT
             Agent = findClosestTile(Agent);
-            %if isequal(Agent.goal,[-1 -1])
-                 %Agent.goal = [1,1];%change later
-            %else
+            if isequal(Agent.goal,[-1 -1])
+                 Agent.goal = [1,1];%change later
+            else
                 r = RRT(Agent.Map , Agent.Position , Agent.goal);
                 r = runRRT(r);
                 Agent.posiblepath = r.path;
@@ -69,12 +70,12 @@ classdef Agent
                 end
 
                 oldcost = length(Agent.path);
-                if isequal(Agent.goal,Agent.Position)
+                if (isequal(Agent.goal,Agent.Position)) || (Agent.lastMove == 0)
                     Agent.Bid = length(Agent.posiblepath);
                 else
                     Agent.Bid = oldcost - length(Agent.posiblepath);
                 end
-            %end
+            end
         end 
         
         function Agent = findClosestTile(Agent) %Returns position [row,column] of closest tile. [-1,-1] if there are no more tiles to paint
@@ -98,6 +99,9 @@ classdef Agent
                 Agent.Position = Agent.path(2,:);
                 Agent.path = Agent.path(2:end,:);
                 Agent.lastMove = 1;
+                if isequal(Agent.Position,Agent.goal);
+                   Agent.lastMove = 0;
+                end
                 Agent.timeSinceStart = Agent.timeSinceStart + 1;
             end
         end
