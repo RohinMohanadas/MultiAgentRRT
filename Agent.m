@@ -76,6 +76,9 @@ classdef Agent
                     Agent.Bid = oldcost - length(Agent.posiblepath);
                 end
             end
+            
+            Agent.lastMove = 1;
+            
         end 
         
         function Agent = findClosestTile(Agent) %Returns position [row,column] of closest tile. [-1,-1] if there are no more tiles to paint
