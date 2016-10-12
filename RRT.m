@@ -17,6 +17,7 @@ classdef RRT
     n %number of rows/columns
     N %number of tiles in the map (N=nxn)
     path %sequence of positions from initialPosition to goal
+    path_found %boolean to indicate that a path has been found
     finalMap %Map with 1's on the path positions
     end
     
@@ -30,6 +31,7 @@ classdef RRT
                         s = size(rrt.initialMap);
                         rrt.N = s(1)*s(2);
                         rrt.n = s(1);
+                        rrt.path_found = false;
             else
                     error('Incorrect Number of Inputs for class Agent')
             end
@@ -70,8 +72,6 @@ classdef RRT
                 
                 if(loop_count > rrt.N^2)
                     disp('Leaving RRT: No path found');
-                    %Create some sort of indicator that it will make no
-                    %move
                     break;
                 end
                 
@@ -98,7 +98,7 @@ classdef RRT
                 if (rrt.initialMap(rrt.goal(1),rrt.goal(2)) == 1)
                     %fprintf('Found goal in %d iterations\n', i);
                     %trace back your path:
-                    rrt_path = getPath(tree,parent,i);
+                    rrt.path = getPath(tree,parent,i);
                     break; %breaks loop if you have reached the end
                 end
                 
@@ -106,16 +106,15 @@ classdef RRT
                 if(nnz(~rrt.initialMap) == 0)
                     no_path = true;
                     disp('Leaving RRT: No path found');
-                    %Create something that gives indication to do nothing.
                     break;
                 end
             end
             
             %create an updated rrt map that shows path
             if(no_path == false && loop_count < rrt.N^2)
-                rrt.path=rrt_path;
+                rrt.path_found = true; %indicates path has been found
                 %create an updated rrt map that shows path
-                rrt.finalMap = getPathMap(rrt,rrt_path);
+                rrt.finalMap = getPathMap(rrt);
             end 
         end 
         
@@ -227,10 +226,10 @@ classdef RRT
                 rrt_path = flipud(rrt_path); %flipping the matrix
         end
         
-        function rrt_map = getPathMap(rrt,rrt_path)
+        function rrt_map = getPathMap(rrt)
             rrt_map = zeros(rrt.n);
-            for index = 1:size(rrt_path,1)
-                rrt_map(rrt_path(index,1),rrt_path(index,2)) = 1;
+            for index = 1:size(rrt.path,1)
+                rrt_map(rrt.path(index,1),rrt.path(index,2)) = 1;
             end
         end
         
