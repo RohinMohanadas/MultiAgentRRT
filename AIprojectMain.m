@@ -10,8 +10,6 @@ AGENT_COUNT = 2;
 MainImage = importdata('Albert.bmp');
 GlobalCopy = MainImage(1).cdata;
 %GlobalCopy = [0 0 0 0 0 0 0 0 0 0;0 0 0 2 2 2 0 0 0 0; 0 0 0 0 2 0 0 0 0 0;0 0 0 0 0 0 0 0 0 0;0 0 0 2 2 2 0 0 0 0; 0 0 0 0 2 0 0 0 0 0;0 0 0 0 0 0 0 0 0 0;0 0 0 2 2 2 0 0 0 0; 0 0 0 0 2 0 0 0 0 0;0 0 0 0 0 0 0 0 0 0];
-%GlobalCopy = zeros(20);
-%GlobalCopy(:,1:4) = 2;
 [Xmax,Ymax] = size(GlobalCopy);
 GlobalCopy(GlobalCopy==79) = 5;     %   79	-> 5    (Red to obstacles)
 GlobalCopy(GlobalCopy==0) = 2;      %   0	-> 2    (Black cell to picture to be painted)
@@ -60,44 +58,51 @@ while(~isequal(A(1).Map,obstacledMap) || ~isequal(A(2).Map,obstacledMap))       
     
     % Both agents have done their initial planning, and have values in path
     % variable.
-    if(mod(Counter,3)==0)                                   % Mandatory Planning phase
+    if(mod(Counter,1)==0)                                   % Mandatory Planning phase
         A(1) = calculatePath(A(1),A(2).path);               % Both agents plan here and then
         A(2) = calculatePath(A(2),A(1).path);               % their Bids are compared. And the
         if(A(1).Bid > 0 || A(2).Bid > 0)
             if(A(2).Bid > A(1).Bid)
                 A(2) = assignpath(A(2));
-                A(1) = move(A(1));
-                if A(1).Map(A(1).Position(1),A(1).Position(2)) == 5
-                    fprintf('Hit an obstacle!');
-                end
-                A(2) = move(A(2));
-                if A(2).Map(A(2).Position(1),A(2).Position(2)) == 5
-                    fprintf('Hit an obstacle!');
-                end
+                 fprintf('A(2) replans\n');
+                 disp(A(1).Bid);
+                 disp(A(2).Bid);
+
+                %A(1) = move(A(1));
+                %if A(1).Map(A(1).Position(1),A(1).Position(2)) == 5
+                %    fprintf('Hit an obstacle!: %d %d \n',A(1).Position(1),A(1).Position(2));
+                %end
+                %A(2) = move(A(2));
+                %if A(2).Map(A(2).Position(1),A(2).Position(2)) == 5
+                %    fprintf('Hit an obstacle!: %d %d \n',A(2).Position(1),A(2).Position(2));
+                %end
             else
                 A(1) = assignpath(A(1));
-                A(2) = move(A(2));
-                if A(2).Map(A(2).Position(1),A(2).Position(2)) == 5
-                    fprintf('Hit an obstacle!');
-                end
-                A(1) = move(A(1));
-                if A(1).Map(A(1).Position(1),A(1).Position(2)) == 5
-                    fprintf('Hit an obstacle!');
-                end
+                 fprintf('A(1) replans\n');
+                 disp(A(1).Bid);
+                 disp(A(2).Bid);
+%                 A(2) = move(A(2));
+%                 if A(2).Map(A(2).Position(1),A(2).Position(2)) == 5
+%                     fprintf('Hit an obstacle!: %d %d \n',A(2).Position(1),A(2).Position(2));
+%                 end
+%                 A(1) = move(A(1));
+%                 if A(1).Map(A(1).Position(1),A(1).Position(2)) == 5
+%                     fprintf('Hit an obstacle!: %d %d \n',A(1).Position(1),A(1).Position(2));
+%                 end
             end
         end
-    else
+    end%     else
         
         % Call the move function on both the agents and handle the results
         % below. The only place in the while loop where move will be called
         
         A(1) = move(A(1));
-        if A(1).Map(A(1).Position(1),A(1).Position(2)) == 5
-            fprintf('Hit an obstacle!\n');
+        if A(1).lastMove == 1 &&  A(1).Map(A(1).Position(1),A(1).Position(2)) == 5
+             fprintf('\nHit an obstacle!: %d %d by A(1)\n\n',A(1).Position(1),A(1).Position(2));
         end
         A(2) = move(A(2));
-        if A(2).Map(A(2).Position(1),A(2).Position(2)) == 5
-            fprintf('Hit an obstacle!\n');
+        if A(2).lastMove == 1 && A(2).Map(A(2).Position(1),A(2).Position(2)) == 5
+             fprintf('\nHit an obstacle!: %d %d by A(2)\n\n',A(2).Position(1),A(2).Position(2));
         end
         % Check for cases where both the Agents are done with their mini
         % tasks at the same time.
@@ -107,6 +112,13 @@ while(~isequal(A(1).Map,obstacledMap) || ~isequal(A(2).Map,obstacledMap))       
             A(1) = updateMap(A(1),A(2).Position,5);
             A(2) = updateMap(A(2),A(1).Position,5);
             A(2) = updateMap(A(2),A(2).Position,5);
+            
+            fprintf('path1\n')
+            disp( A(1).path)
+            fprintf('path2\n')
+            disp( A(2).path)
+
+            
             fprintf('A(2) painted a tile : %d,%d\n',A(2).goal(1),A(2).goal(2));
             fprintf('A(1) painted a tile : %d,%d\n',A(1).goal(1),A(1).goal(2));
             A(1) = calculatePath(A(1),A(2).path);
@@ -121,17 +133,25 @@ while(~isequal(A(1).Map,obstacledMap) || ~isequal(A(2).Map,obstacledMap))       
         elseif((~isequal(A(1).goal,A(1).Position)) && (isequal(A(2).goal,A(2).Position)))    % one agent is still on the move.
             A(1) = updateMap(A(1),A(2).Position,5);
             A(2) = updateMap(A(2),A(2).Position,5);
+            fprintf('path1\n')
+            disp( A(1).path)
+            fprintf('path2\n')
+            disp( A(2).path)
             fprintf('A(2) painted a tile : %d,%d\n',A(2).goal(1),A(2).goal(2));
             A(2) = calculatePath(A(2),A(1).path);
             A(2) = assignpath(A(2));
         elseif((isequal(A(1).goal,A(1).Position)) && (~isequal(A(2).goal,A(2).Position)))    % one agent is still on the move.
             A(1) = updateMap(A(1),A(1).Position,5);
             A(2) = updateMap(A(2),A(1).Position,5);
+            fprintf('path1\n')
+            disp( A(1).path)
+            fprintf('path2\n')
+            disp( A(2).path)
             fprintf('A(1) painted a tile : %d,%d\n',A(1).goal(1),A(1).goal(2));
             A(1) = calculatePath(A(1),A(2).path);
             A(1) = assignpath(A(1));
         end;
     end;
-end;
+%end;
 
 fprintf('Time take for the Multi Agent planning :%d\n',Counter);
