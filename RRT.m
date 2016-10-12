@@ -6,7 +6,7 @@ classdef RRT
 %*   DESCRIPTION:                                                                                    *%
 %*   AUTHOR:                                                                                         *%
 %*   DATE CREATION:09/10/2016                                                                        *%
-%*   LAST MODIFIED:10/10/2016                                                                        *%
+%*   LAST MODIFIED:10/12/2016                                                                        *%
 %*                                                                                                   *%
 %*****************************************************************************************************%
     
@@ -44,22 +44,37 @@ classdef RRT
             node_y(1) = rrt.initialPosition(2);
             tree(1,:) = [node_x(1),node_y(1)];
             rrt.initialMap(node_x(1),node_y(1)) = 1;
-
-            i = 1;
-            while (i <= rrt.N)
-                i = i+1;
-                %find a sample node
-                random_node = randomNode(rrt,node_x,node_y);
-                %Finding the nearest node
-                nearest_node = nearestNode(rrt,node_x,node_y,random_node);   
-                %get the new node
-                new_node = newNode(rrt,random_node,nearest_node);
-                %check if new node is in collision => rerun that loop
-                if(rrt.initialMap(new_node(1),new_node(2)) == 5)
-                    %fprintf('New node is an obstacle: %d\n', Ctr);
-                    i = i-1;
-                    continue;
-                end;
+            loop_count = 0;
+            no_path = false;
+            
+            for i = 2:rrt.N
+                is_valid = false;
+                while (is_valid == false)
+                    if(nnz(~rrt.initialMap) == 0) %all map elements have been filled
+                        break;
+                    end
+                    %find a sample node
+                    random_node = randomNode(rrt,node_x,node_y);
+                    %Finding the nearest node
+                    nearest_node = nearestNode(node_x,node_y,random_node);
+                    %get the new node
+                    new_node = newNode(rrt,random_node,nearest_node);
+                    %check if new node is in collision => rerun that loop
+                    is_valid = detectObstacle(rrt.initialMap,new_node,is_valid);
+                    %update loop count of this while loop
+                    loop_count = loop_count + 1;
+                    if(loop_count > rrt.N^2)
+                        break;
+                    end
+                end
+                
+                if(loop_count > rrt.N^2)
+                    disp('Leaving RRT: No path found');
+                    %Create some sort of indicator that it will make no
+                    %move
+                    break;
+                end
+                
                 %add the new nodes to node history
                 node_x(i) = new_node(1);
                 node_y(i) = new_node(2);
@@ -83,13 +98,25 @@ classdef RRT
                 if (rrt.initialMap(rrt.goal(1),rrt.goal(2)) == 1)
                     %fprintf('Found goal in %d iterations\n', i);
                     %trace back your path:
-                    rrt_path = getPath(rrt,tree,parent,i);
+                    rrt_path = getPath(tree,parent,i);
                     break; %breaks loop if you have reached the end
                 end
+                
+                %if(loop_count >= N^2)
+                if(nnz(~rrt.initialMap) == 0)
+                    no_path = true;
+                    disp('Leaving RRT: No path found');
+                    %Create something that gives indication to do nothing.
+                    break;
+                end
             end
-            rrt.path=rrt_path;
+            
             %create an updated rrt map that shows path
-            rrt.finalMap = getPathMap(rrt,rrt_path);     
+            if(no_path == false && loop_count < rrt.N^2)
+                rrt.path=rrt_path;
+                %create an updated rrt map that shows path
+                rrt.finalMap = getPathMap(rrt,rrt_path);
+            end 
         end 
         
         function random_node = randomNode(rrt,node_x,node_y)
@@ -110,7 +137,7 @@ classdef RRT
             %fprintf('random node: (%d,%d)\n', random_node(1),random_node(2));
         end
         
-        function nearest_node = nearestNode(rrt,node_x,node_y,random_node)
+        function nearest_node = nearestNode(node_x,node_y,random_node)
             if (length(find(node_x)) == 1) %finds the number of non-zero elements
                 nearest_node = [node_x(1),node_y(1)];
             else
@@ -125,7 +152,6 @@ classdef RRT
                 end
             end
             %fprintf('nearest node: (%d,%d)\n', nearest_node(1),nearest_node(2));
-
         end
         
         function new_node = newNode(rrt,random_node,nearest_node)
@@ -135,7 +161,6 @@ classdef RRT
             left = [0,-1];
             right = [0,1];
             
-
             %find the slope from nearest_node to random_node: y_diff/x_diff
             y_diff = random_node(1)-nearest_node(1);
             x_diff = random_node(2)-nearest_node(2);
@@ -175,10 +200,14 @@ classdef RRT
             end
         end
         
-        function rrt_path = getPath(rrt,tree,parent,current_index)
+        function is_valid = detectObstacle(rrt, new_node, is_valid)
+            if(rrt.initialMap(new_node(1),new_node(2)) ~= 5)
+                is_valid = true;
+            end
+        end
+        
+        function rrt_path = getPath(tree,parent,current_index)
             rrt_path = zeros(current_index,2);
-            %disp(tree);
-            %disp(parent);
             for index = 1:current_index
                 if (index == 1)
                     rrt_path(index,:) = tree(current_index,:);
@@ -188,15 +217,11 @@ classdef RRT
                     child_of = parent(current_index);
                 else
                     if(child_of == 0)
-                        %rrt_path = flipud(rrt_path); %flipping the matrix
                         break;
                     else
                         rrt_path(index,:) = tree(child_of,:);
                         child_of = parent(child_of);
-                        %if (index == 2 && current_index == 2)
-                        %    rrt_path = flipud(rrt_path); %flipping the matrix
-                        %    break;
-                        end
+                    end
                 end
             end
                 rrt_path = flipud(rrt_path); %flipping the matrix
@@ -208,6 +233,6 @@ classdef RRT
                 rrt_map(rrt_path(index,1),rrt_path(index,2)) = 1;
             end
         end
+        
     end
 end
-
